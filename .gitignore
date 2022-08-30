@@ -1,3 +1,5 @@
+babel-temp*
+
 # Logs
 logs
 *.log

@@ -7,6 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer';
 import childProcess from 'child_process';
+import * as MESSAGES from './browser-puppeteer/src/messages.js';
+import BrowserPuppeteer from './browser-puppeteer/src/puppeteer/browser-puppeteer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -95,17 +97,19 @@ export default class RecorderServer {
         // TODO check for configs not in default conf
         this._recorderAppServer = http.createServer(this._onRecRequest.bind(this));
         this._wsServer = new WebSocketServer({ server: this._recorderAppServer });
+        this._puppeteer = new BrowserPuppeteer();
 
         /** @type {puppeteer.Browser} */
         this._browser = null;
+
+        this._log = console;
     }
 
     async start() {
         this._wsServer.on('connection', () => console.log('recorder app connected'));
-
         this._recorderAppServer.listen(this._conf.recorderAppPort);
-        // this._puppeteer.start();
         this._browser = await puppeteer.launch({ headless: false });
+        this._puppeteer.start();
 
         this._browser.on('targetcreated', async (/** @type {import('puppeteer').Target} */ target) => {
             console.log('targetcreated event', target.type());
@@ -113,12 +117,14 @@ export default class RecorderServer {
                 return;
             }
 
-            (await target.page()).on('domcontentloaded', () => {
+            const page = (await target.page());
+            page.on('domcontentloaded', () => {
                 this.injectBrowserPuppeteer(page);
             });
         });
 
-        (await this._browser.pages())[0].on('domcontentloaded', () => {
+        const page = (await this._browser.pages())[0];
+        page.on('domcontentloaded', () => {
             this.injectBrowserPuppeteer(page);
         });
 
@@ -131,40 +137,40 @@ export default class RecorderServer {
 
         console.log('Recorder and target browsers launched!');
 
-        // const boundProxyMessage = this._proxyMessage.bind(this);
-        // this._puppeteer.on(MESSAGES.UPSTREAM.CAPTURED_EVENT, boundProxyMessage);
-        // this._puppeteer.on(MESSAGES.UPSTREAM.INSERT_ASSERTION, boundProxyMessage);
-        // this._puppeteer.on('puppetConnected', async () => {
-        //     try {
-        //         // TODO create & use setPuppetSettings?
-        //         await this._puppeteer.setTransmitEvents(true);
-        //         const selectors = (this._conf.onSelectorBecameVisible).map(data => data.selector);
-        //         if (selectors.length > 0) {
-        //             await this._puppeteer.setSelectorBecameVisibleSelectors(selectors);
-        //         }
-        //         if (this._conf.mouseoverSelectors.length > 0) {
-        //             await this._puppeteer.sendMessage({
-        //                 type: MESSAGES.DOWNSTREAM.SET_MOUSEOVER_SELECTORS,
-        //                 selectors: this._conf.mouseoverSelectors,
-        //             });
-        //         }
-        //         if (this._conf.ignoredClasses.length > 0) {
-        //             await this._puppeteer.sendMessage({
-        //                 type: MESSAGES.DOWNSTREAM.SET_IGNORED_CLASSES,
-        //                 classes: this._conf.ignoredClasses,
-        //             });
-        //         }
-        //         if (this._conf.uniqueSelectorOptions) {
-        //             await this._puppeteer.sendMessage({
-        //                 type: MESSAGES.DOWNSTREAM.SET_UNIQUE_SELECTOR_OPTIONS,
-        //                 options: this._conf.uniqueSelectorOptions,
-        //             });
-        //         }
-        //     }
-        //     catch (err) {
-        //         this._log.error(err.stack || err.message);
-        //     }
-        // });
+        const boundProxyMessage = this._proxyMessage.bind(this);
+        this._puppeteer.on(MESSAGES.UPSTREAM.CAPTURED_EVENT, boundProxyMessage);
+        this._puppeteer.on(MESSAGES.UPSTREAM.INSERT_ASSERTION, boundProxyMessage);
+        this._puppeteer.on('puppetConnected', async () => {
+            try {
+                // TODO create & use setPuppetSettings?
+                await this._puppeteer.setTransmitEvents(true);
+                const selectors = (this._conf.onSelectorBecameVisible).map(data => data.selector);
+                if (selectors.length > 0) {
+                    await this._puppeteer.setSelectorBecameVisibleSelectors(selectors);
+                }
+                if (this._conf.mouseoverSelectors.length > 0) {
+                    await this._puppeteer.sendMessage({
+                        type: MESSAGES.DOWNSTREAM.SET_MOUSEOVER_SELECTORS,
+                        selectors: this._conf.mouseoverSelectors,
+                    });
+                }
+                if (this._conf.ignoredClasses.length > 0) {
+                    await this._puppeteer.sendMessage({
+                        type: MESSAGES.DOWNSTREAM.SET_IGNORED_CLASSES,
+                        classes: this._conf.ignoredClasses,
+                    });
+                }
+                if (this._conf.uniqueSelectorOptions) {
+                    await this._puppeteer.sendMessage({
+                        type: MESSAGES.DOWNSTREAM.SET_UNIQUE_SELECTOR_OPTIONS,
+                        options: this._conf.uniqueSelectorOptions,
+                    });
+                }
+            }
+            catch (err) {
+                this._log.error(err.stack || err.message);
+            }
+        });
     }
 
     async stop() {
@@ -211,5 +217,10 @@ export default class RecorderServer {
             resp.status = 404;
             resp.end('Not found');
         }
+    }
+
+    async injectBrowserPuppeteer(page) {
+        const browserPuppeteer = await fsp.readFile(path.resolve(__dirname, './browser-puppeteer/dist/browser-puppet.defaults.js'), 'utf-8');
+        await page.addScriptTag({ content: browserPuppeteer });
     }
 }

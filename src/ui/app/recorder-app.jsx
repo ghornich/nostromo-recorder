@@ -57,7 +57,7 @@ function RecorderApp(conf) {
 
     self._wsConn = null;
     self.commandList = new CommandList({
-        compositeEvents: self._conf.compositeEvents,
+        compositeEvents: self._conf.compositeEvents || [],
         compositeEventsThreshold: self._conf.compositeEventsThreshold,
         compositeEventsComparator: self._conf.compositeEventsComparator,
     });
@@ -115,11 +115,12 @@ RecorderApp.prototype.start = function () {
     m.mount($('#mount')[0], MountComp);
 };
 
-RecorderApp.prototype._onWsMessage = function (event) {
+RecorderApp.prototype._onWsMessage = async function (event) {
+    console.log('event', event);
     let data = event.data;
 
     try {
-        data = JSONF.parse(data);
+        data = JSONF.parse(await data.text());
 
         switch (data.type) {
             case MESSAGES.UPSTREAM.SELECTOR_BECAME_VISIBLE:

@@ -1,5 +1,8 @@
 {
   "main": "index.js",
   "name": "browser-puppeteer",
-  "version": "2.0.0"
+  "version": "2.0.0",
+  "dependencies": {
+    "bluebird": "^3.7.2"
+  }
 }

@@ -1,15 +1,15 @@
 // @ts-nocheck
 'use strict';
 
-const defaults = require('lodash.defaults');
 const SelectorElement = require('./selector-element');
 
 exports = module.exports = SelectorElementList;
 
 function SelectorElementList(options) {
-    this._opts = defaults({}, options, {
+    this._opts = {
         querySelectorAll: document.querySelectorAll.bind(document),
-    });
+        ...options
+    };
 
     this._selectorElements = [];
 

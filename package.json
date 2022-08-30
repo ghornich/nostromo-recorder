@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node src/cli.js",
-    "build-ui": "babel src/ui/app/recorder-app.jsx -o src/ui/app/babel-temp.js && browserify src/ui/app/babel-temp.js -o dist/recorder-app.dist.js",
-    "build-get-unique-selector": "browserify modules/get-unique-selector/build/get-unique-selector.build.js -o modules/get-unique-selector/dist/get-unique-selector.dist.js"
+    "build": "npm run build-ui && npm run build-get-unique-selector",
+
+    "build-ui": "babel src/ui/app/recorder-app.jsx -o src/ui/app/babel-temp.js && browserify src/ui/app/babel-temp.js -o dist/recorder-app.dist.js && rimraf src/ui/app/babel-temp.js",
+    "build-get-unique-selector": "browserify src/get-unique-selector/build/get-unique-selector.build.js -o src/get-unique-selector/dist/get-unique-selector.dist.js",
+    "prepare": "npm run build"
   },
   "author": "ghornich",
   "license": "MIT",
@@ -29,7 +32,7 @@
     "browserify": "^17.0.0",
     "eslint": "^8.22.0",
     "eslint-plugin-jest": "^26.8.7",
-    "jest": "^28.1.3"
-  },
-  "source": "src/ui/recorder-ui.html"
+    "jest": "^28.1.3",
+    "rimraf": "^3.0.2"
+  }
 }

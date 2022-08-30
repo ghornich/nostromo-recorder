@@ -1,5 +1,5 @@
 const $ = require('jquery');
-const JSONF = require('../../jsonf/jsonf');
+const JSONF = require('../../jsonf/jsonf.cjs');
 const m = require('mithril');
 const Ws4ever = require('../../ws4ever');
 

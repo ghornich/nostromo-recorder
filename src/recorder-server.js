@@ -123,11 +123,11 @@ export default class RecorderServer {
         });
 
         // TODO platform-specific
-        // childProcess.exec(`start "" "http://localhost:${this._conf.recorderAppPort}"`, err => {
-        //     if (err) {
-        //         console.error(err);
-        //     }
-        // });
+        childProcess.exec(`start "" "http://localhost:${this._conf.recorderAppPort}"`, err => {
+            if (err) {
+                console.error(err);
+            }
+        });
 
         console.log('Recorder and target browsers launched!');
 

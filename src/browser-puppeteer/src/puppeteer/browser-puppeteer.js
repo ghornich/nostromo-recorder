@@ -149,7 +149,6 @@ BrowserPuppeteer.prototype._onWsConnection = function (wsConn, request) {
 
 BrowserPuppeteer.prototype._onWsMessage = function (rawData) {
     const data = JSONF.parse(rawData);
-    console.log(rawData);
 
     const MAX_TRACE_RAW_LENGTH = 300;
     const trimmedRawData = rawData.length > MAX_TRACE_RAW_LENGTH

@@ -1,4 +1,3 @@
-const MODULES_PATH = '../../../';
 const Promise = require('bluebird');
 const fs = Promise.promisifyAll(require('fs'));
 const pathlib = require('path');
@@ -6,9 +5,8 @@ const urllib = require('url');
 const http = require('http');
 const util = require('util');
 const EventEmitter = require('events').EventEmitter;
-const JSONF = require(MODULES_PATH + 'jsonf');
+const JSONF = require('../../../jsonf/jsonf.cjs');
 const WS = require('ws');
-const Loggr = require(MODULES_PATH + 'loggr');
 const MESSAGES = require('../messages');
 
 const DEFAULT_WAIT_FOR_CONNECTION_TIMEOUT_MS = 60000;
@@ -22,7 +20,7 @@ class WaitForConnectionTimeoutError extends Error {}
  * @typedef {object} BrowserPuppeteerConfig
  * @property {Number} [port = 47225] port to communicate with browser/BrowserPuppet
  * @property {Loggr} [logger] custom Loggr instance
- * 
+ *
  */
 
 // TODO convert to ES6 class
@@ -49,10 +47,7 @@ function BrowserPuppeteer(config) {
         message: null,
     };
 
-    this._log = this._conf.logger || new Loggr({
-        logLevel: Loggr.LEVELS.INFO,
-        namespace: 'BrowserPuppeteer',
-    });
+    this._log = this._conf.logger || console;
 
     this._puppetIdBlacklist = new Set();
 }
@@ -157,7 +152,7 @@ BrowserPuppeteer.prototype._onWsMessage = function (rawData) {
 
     const MAX_TRACE_RAW_LENGTH = 300;
     const trimmedRawData = rawData.length > MAX_TRACE_RAW_LENGTH
-        ? rawData.substr(0, MAX_TRACE_RAW_LENGTH) + ' [...]'
+        ? String(rawData).substring(0, MAX_TRACE_RAW_LENGTH) + ' [...]'
         : rawData;
 
     this._log.trace(`_onWsMessage: ${trimmedRawData}`);

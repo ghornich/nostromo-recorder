@@ -100,7 +100,7 @@ Ws4ever.prototype._onWsError = function (...args) {
 };
 
 Ws4ever.prototype._onWsMessage = function (...args) {
-    this.onmessage.apply(null, ...args);
+    this.onmessage(...args);
 };
 
 

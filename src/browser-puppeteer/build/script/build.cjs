@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
 const resolve = require('path').resolve;
-const Promise = require('bluebird');
-const execAsync = Promise.promisify(require('child_process').exec);
+const util = require('util');
+const execAsync = util.promisify(require('child_process').exec);
 
 const buildDefaultsJs = resolve(__dirname, '../build-browser-puppet.defaults.js');
 const buildDistJs = resolve(__dirname, '../build-browser-puppet.dist.js');

@@ -1,5 +1,4 @@
-const Promise = require('bluebird');
-const fs = Promise.promisifyAll(require('fs'));
+const fs = require('fs').promises;
 const pathlib = require('path');
 const urllib = require('url');
 const http = require('http');
@@ -7,7 +6,8 @@ const util = require('util');
 const EventEmitter = require('events').EventEmitter;
 const JSONF = require('../../../jsonf/jsonf.cjs');
 const WS = require('ws');
-const MESSAGES = require('../messages');
+const MESSAGES = require('../messages.cjs');
+const loglevel = require('loglevel');
 
 const DEFAULT_WAIT_FOR_CONNECTION_TIMEOUT_MS = 60000;
 
@@ -19,7 +19,6 @@ class WaitForConnectionTimeoutError extends Error {}
 /**
  * @typedef {object} BrowserPuppeteerConfig
  * @property {Number} [port = 47225] port to communicate with browser/BrowserPuppet
- * @property {Loggr} [logger] custom Loggr instance
  *
  */
 
@@ -47,7 +46,7 @@ function BrowserPuppeteer(config) {
         message: null,
     };
 
-    this._log = this._conf.logger || console;
+    this._log = loglevel;
 
     this._puppetIdBlacklist = new Set();
 }
@@ -101,7 +100,7 @@ BrowserPuppeteer.prototype.waitForConnection = async function (timeout = DEFAULT
             return;
         }
 
-        await Promise.delay(500);
+        await delay(500);
     }
 };
 
@@ -306,6 +305,10 @@ function getPuppetIdFromRequest(request) {
     }
 
     return Number(matches[1]);
+}
+
+function delay(ms) {
+    return new Promise(res => setTimeout(res, ms));
 }
 
 exports = module.exports = BrowserPuppeteer;

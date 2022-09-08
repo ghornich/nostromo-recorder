@@ -7,8 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer';
 import childProcess from 'child_process';
-import * as MESSAGES from './browser-puppeteer/src/messages.js';
-import BrowserPuppeteer from './browser-puppeteer/src/puppeteer/browser-puppeteer.js';
+import * as MESSAGES from './browser-puppeteer/src/messages.cjs';
+import BrowserPuppeteer from './browser-puppeteer/src/puppeteer/browser-puppeteer.cjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -112,20 +112,19 @@ export default class RecorderServer {
         this._puppeteer.start();
 
         this._browser.on('targetcreated', async (/** @type {import('puppeteer').Target} */ target) => {
-            console.log('targetcreated event', target.type());
             if (target.type() !== 'page') {
                 return;
             }
 
-            const page = (await target.page());
-            page.on('domcontentloaded', () => {
-                this.injectBrowserPuppeteer(page);
+            const newPage = (await target.page());
+            newPage.on('domcontentloaded', () => {
+                this.injectBrowserPuppeteer(newPage);
             });
         });
 
-        const page = (await this._browser.pages())[0];
-        page.on('domcontentloaded', () => {
-            this.injectBrowserPuppeteer(page);
+        const firstPage = (await this._browser.pages())[0];
+        firstPage.on('domcontentloaded', () => {
+            this.injectBrowserPuppeteer(firstPage);
         });
 
         // TODO platform-specific

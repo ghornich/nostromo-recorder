@@ -6,16 +6,20 @@
   "type": "module",
   "scripts": {
     "start": "node src/cli.js",
-    "build": "npm run build-ui && npm run build-get-unique-selector",
+    "build": "npm run build-ui && npm run build-get-unique-selector && npm run build-browser-puppeteer",
 
     "build-ui": "babel src/ui/app/recorder-app.jsx -o src/ui/app/babel-temp.js && browserify src/ui/app/babel-temp.js -o dist/recorder-app.dist.js && rimraf src/ui/app/babel-temp.js",
     "build-get-unique-selector": "browserify src/get-unique-selector/build/get-unique-selector.build.js -o src/get-unique-selector/dist/get-unique-selector.dist.js",
+    "build-browser-puppeteer": "node src/browser-puppeteer/build/script/build.cjs",
     "prepare": "npm run build"
   },
   "author": "ghornich",
   "license": "MIT",
   "dependencies": {
     "jquery": "^3.6.0",
+    "lodash.debounce": "^4.0.8",
+    "lodash.defaults": "^4.2.0",
+    "loglevel": "^1.8.0",
     "minimist": "^1.2.6",
     "mithril": "^1.1.1",
     "puppeteer": "^16.2.0",

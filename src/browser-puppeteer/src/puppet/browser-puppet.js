@@ -1,20 +1,19 @@
 'use strict';
 
-var Promise = require('bluebird');
-var $ = require('jquery'); $.noConflict();
-var MESSAGES = require('../messages');
-var JSONF = require('../../../../modules/jsonf');
-var UniqueSelector = require('../../../../modules/get-unique-selector');
-var debounce = require('lodash.debounce');
-var Ws4ever = require('../../../../modules/ws4ever');
-var defaults = require('lodash.defaults');
-var BrowserPuppetCommands = require('./browser-puppet-commands.partial');
-var Loggr = require('../../../../modules/loggr');
-var SelectorObserver = require('../../../../modules/selector-observer');
+const $ = require('jquery'); $.noConflict();
+const MESSAGES = require('../messages.cjs');
+const JSONF = require('../../../jsonf/jsonf.cjs');
+const UniqueSelector = require('../../../get-unique-selector');
+const debounce = require('lodash.debounce');
+const Ws4ever = require('../../../ws4ever');
+const defaults = require('lodash.defaults');
+const BrowserPuppetCommands = require('./browser-puppet-commands.partial');
+const log = require('loglevel');
+const SelectorObserver = require('../../../selector-observer');
 
-var INSERT_ASSERTION_DEBOUNCE = 500;
+const INSERT_ASSERTION_DEBOUNCE = 500;
 
-var DEFAULT_SERVER_URL = 'ws://localhost:47225';
+const DEFAULT_SERVER_URL = 'ws://localhost:47225';
 
 exports = module.exports = BrowserPuppet;
 
@@ -46,12 +45,6 @@ function BrowserPuppet(opts) {
     this._activeElementBeforeWindowBlur = null;
 
     this._puppetId = Math.floor(Math.random() * 10e12);
-
-    this._log = new Loggr({
-        namespace: 'BrowserPuppet',
-        // TODO logLevel
-        logLevel: Loggr.LEVELS.ALL,
-    });
 }
 
 Object.assign(BrowserPuppet.prototype, BrowserPuppetCommands.prototype);
@@ -63,7 +56,7 @@ BrowserPuppet.prototype.start = function () {
 };
 
 BrowserPuppet.prototype._startWs = function () {
-    var self = this;
+    const self = this;
 
     // TODO use url lib instead of concat
     self._wsConn = new Ws4ever(self._opts.serverUrl + '?puppet-id=' + this._puppetId);
@@ -71,12 +64,12 @@ BrowserPuppet.prototype._startWs = function () {
         self._onMessage(e.data);
     };
     self._wsConn.onerror = function (err) {
-        self._log.error(err);
+        log.error(err);
     };
 };
 
 BrowserPuppet.prototype._sendMessage = function (rawData) {
-    var data = rawData;
+    let data = rawData;
 
     if (typeof data === 'object') {
         data = JSONF.stringify(data);
@@ -93,12 +86,12 @@ BrowserPuppet.prototype._isJQueryElementsVisible = function ($els) {
         return false;
     }
 
-    for (var i = 0; i < $els.length; i++) {
-        var el = $els[i];
-        var rect = el.getBoundingClientRect();
-        var elCenterX = rect.left + rect.width / 2;
-        var elCenterY = rect.top + rect.height / 2;
-        var elFromPoint = document.elementFromPoint(elCenterX, elCenterY);
+    for (let i = 0; i < $els.length; i++) {
+        const el = $els[i];
+        const rect = el.getBoundingClientRect();
+        const elCenterX = rect.left + rect.width / 2;
+        const elCenterY = rect.top + rect.height / 2;
+        const elFromPoint = document.elementFromPoint(elCenterX, elCenterY);
 
         if (elFromPoint === el || el.contains(elFromPoint)) {
             return true;
@@ -112,60 +105,63 @@ BrowserPuppet.prototype.isSelectorVisible = function (selector) {
     return this._isJQueryElementsVisible(this.$(selector));
 };
 
-BrowserPuppet.prototype._onMessage = function (rawData) {
-    var self = this;
-
-    if (self._isTerminating) {
+BrowserPuppet.prototype._onMessage = async function (rawData) {
+    if (this._isTerminating) {
         throw new Error('BrowserPuppet::_onMessage: cannot process message, puppet is terminating');
     }
 
     // no return
-    Promise.try(function () {
-        var data = JSONF.parse(rawData);
+    let result;
+
+    try {
+        const data = JSONF.parse(rawData);
 
         switch (data.type) {
             case MESSAGES.DOWNSTREAM.EXEC_COMMAND:
             case MESSAGES.DOWNSTREAM.EXEC_FUNCTION:
-                self._isExecuting = true;
-                return self._onExecMessage(data);
+                this._isExecuting = true;
+                result = await this._onExecMessage(data);
+                break;
 
             case MESSAGES.DOWNSTREAM.SET_SELECTOR_BECAME_VISIBLE_DATA:
-                return self.setOnSelectorBecameVisibleSelectors(data.selectors);
+                result = this.setOnSelectorBecameVisibleSelectors(data.selectors);
+                break;
 
             case MESSAGES.DOWNSTREAM.SET_TRANSMIT_EVENTS:
-                return self.setTransmitEvents(data.value);
+                this.setTransmitEvents(data.value);
+                break;
 
             case MESSAGES.DOWNSTREAM.CLEAR_PERSISTENT_DATA:
-                return self.clearPersistentData();
+                this.clearPersistentData();
+                break;
 
             case MESSAGES.DOWNSTREAM.SET_MOUSEOVER_SELECTORS:
-                self._mouseoverSelector = data.selectors.join(', ');
-                self._attachMouseoverCaptureEventListener();
-                return;
+                this._mouseoverSelector = data.selectors.join(', ');
+                this._attachMouseoverCaptureEventListener();
+                break;
 
             case MESSAGES.DOWNSTREAM.SET_IGNORED_CLASSES:
                 // TODO ugly
-                self._uniqueSelector._opts.ignoredClasses = data.classes;
+                this._uniqueSelector._opts.ignoredClasses = data.classes;
                 return;
 
             case MESSAGES.DOWNSTREAM.SET_UNIQUE_SELECTOR_OPTIONS:
-                self._uniqueSelector = new UniqueSelector(data.options);
-                return;
+                this._uniqueSelector = new UniqueSelector(data.options);
+                break;
 
             case MESSAGES.DOWNSTREAM.TERMINATE_PUPPET:
-                self._isTerminating = true;
-                return;
+                this._isTerminating = true;
+                break;
 
             default:
                 throw new Error('BrowserPuppet: unknown message type: ' + data.type);
         }
-    })
-    .then(function (result) {
-        self._log.info('Sending ACK message');
-        self._sendMessage({ type: MESSAGES.UPSTREAM.ACK, result: result });
-    })
-    .catch(function (err) {
-        var errorDTO = {};
+
+        log.info('Sending ACK message');
+        this._sendMessage({ type: MESSAGES.UPSTREAM.ACK, result: result });
+    }
+    catch (err) {
+        const errorDTO = {};
 
         Object.keys(err).forEach(function (key) {
             if (!err.hasOwnProperty(key)) {
@@ -177,16 +173,16 @@ BrowserPuppet.prototype._onMessage = function (rawData) {
         errorDTO.message = err.message;
         errorDTO.stack = err.stack;
 
-        self._sendMessage({ type: MESSAGES.UPSTREAM.NAK, error: errorDTO });
-    })
-    .finally(function () {
-        self._isExecuting = false;
+        this._sendMessage({ type: MESSAGES.UPSTREAM.NAK, error: errorDTO });
+    }
+    finally {
+        this._isExecuting = false;
 
-        if (self._isTerminating) {
-            self._wsConn.close();
-            self._wsConn = null;
+        if (this._isTerminating) {
+            this._wsConn.close();
+            this._wsConn = null;
         }
-    });
+    }
 };
 
 BrowserPuppet.prototype._canCapture = function () {
@@ -205,18 +201,18 @@ BrowserPuppet.prototype._attachCaptureEventListeners = function () {
 };
 
 BrowserPuppet.prototype._attachConsolePipe = function () {
-    var self = this;
+    const self = this;
     // var oldLog = console.log;
     // var oldInfo = console.info;
-    var oldWarn = console.warn;
-    var oldError = console.error;
+    const oldWarn = console.warn;
+    const oldError = console.error;
 
     function sendConsoleMessageIfConnected(messageType, args) {
         if (!self._wsConn.isConnected()) {
             return;
         }
 
-        var message = Array.prototype.map.call(args, function (arg) {
+        const message = Array.prototype.map.call(args, function (arg) {
             return String(arg);
         })
         .join(' ');
@@ -238,14 +234,14 @@ BrowserPuppet.prototype._attachConsolePipe = function () {
     //     sendConsoleMessageIfConnected('info', arguments);
     // };
 
-    console.warn = function () {
-        oldWarn.apply(console, arguments);
-        sendConsoleMessageIfConnected('warn', arguments);
+    console.warn = function (...args) {
+        oldWarn.apply(console, args);
+        sendConsoleMessageIfConnected('warn', args);
     };
 
-    console.error = function () {
-        oldError.apply(console, arguments);
-        sendConsoleMessageIfConnected('error', arguments);
+    console.error = function (...args) {
+        oldError.apply(console, args);
+        sendConsoleMessageIfConnected('error', args);
     };
 };
 
@@ -254,22 +250,22 @@ BrowserPuppet.prototype._attachMouseoverCaptureEventListener = function () {
     document.body.addEventListener('mouseover', this._onMouseoverCapture.bind(this), true);
 };
 
-var SHIFT_KEY = 16;
-var CTRL_KEY = 17;
+const SHIFT_KEY = 16;
+const CTRL_KEY = 17;
 
 BrowserPuppet.prototype._onClickCapture = function (event) {
     if (!this._canCapture()) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     try {
         var selector = this._uniqueSelector.get(target);
         var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
@@ -290,10 +286,10 @@ BrowserPuppet.prototype._onFocusCapture = function (event) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     if (this._activeElementBeforeWindowBlur === target) {
-        this._log.debug('focus capture prevented during window re-focus');
+        log.debug('focus capture prevented during window re-focus');
         this._activeElementBeforeWindowBlur = null;
         return;
     }
@@ -303,7 +299,7 @@ BrowserPuppet.prototype._onFocusCapture = function (event) {
         var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
@@ -324,14 +320,14 @@ BrowserPuppet.prototype._onInputCapture = function (event) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     try {
         var selector = this._uniqueSelector.get(target);
         var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
@@ -348,25 +344,25 @@ BrowserPuppet.prototype._onInputCapture = function (event) {
     });
 };
 
-var SCROLL_DEBOUNCE = 500;
+const SCROLL_DEBOUNCE = 500;
 
 BrowserPuppet.prototype._onScrollCapture = debounce(function (event) {
     if (!this._canCapture()) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     try {
         var selector = this._uniqueSelector.get(target);
         var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
-    var targetDTO = getTargetNodeDTO(target);
+    const targetDTO = getTargetNodeDTO(target);
     targetDTO.scrollTop = target.scrollTop;
 
     this._sendMessage({
@@ -393,14 +389,14 @@ BrowserPuppet.prototype._onKeydownCapture = function (event) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     try {
         var selector = this._uniqueSelector.get(target);
         var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
@@ -425,14 +421,14 @@ BrowserPuppet.prototype._onChangeCapture = function (event) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     try {
         var selector = this._uniqueSelector.get(target);
         // var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
     }
     catch (err) {
-        this._log.error(err);
+        log.error(err);
         return;
     }
 
@@ -453,7 +449,7 @@ BrowserPuppet.prototype._onMouseoverCapture = function (event) {
         return;
     }
 
-    var target = event.target;
+    const target = event.target;
 
     if (this.$(target).is(this._mouseoverSelector)) {
         try {
@@ -461,7 +457,7 @@ BrowserPuppet.prototype._onMouseoverCapture = function (event) {
             var fullSelectorPath = this._uniqueSelector.getFullSelectorPath(target);
         }
         catch (err) {
-            this._log.error(err);
+            log.error(err);
             return;
         }
 
@@ -488,7 +484,7 @@ BrowserPuppet.prototype._sendInsertAssertionDebounced = debounce(function () {
 }, INSERT_ASSERTION_DEBOUNCE);
 
 BrowserPuppet.prototype.setOnSelectorBecameVisibleSelectors = function (selectors) {
-    var self = this;
+    const self = this;
 
     if (self._selectorObserver !== null) {
         self._selectorObserver.disconnect();
@@ -497,7 +493,7 @@ BrowserPuppet.prototype.setOnSelectorBecameVisibleSelectors = function (selector
 
     // TODO check _canCapture
 
-    var observeList = selectors.map(function (selector) {
+    const observeList = selectors.map(function (selector) {
         return {
             selector: selector,
             listener: self._sendMessage.bind(self, { type: MESSAGES.UPSTREAM.SELECTOR_BECAME_VISIBLE, selector: selector }),
@@ -514,7 +510,7 @@ BrowserPuppet.prototype.setTransmitEvents = function (value) {
     this._transmitEvents = value;
 };
 
-BrowserPuppet.prototype._onExecMessage = Promise.method(function (data) {
+BrowserPuppet.prototype._onExecMessage = async function (data) {
     if (data.type === MESSAGES.DOWNSTREAM.EXEC_COMMAND) {
         return this.execCommand(data.command);
     }
@@ -524,14 +520,14 @@ BrowserPuppet.prototype._onExecMessage = Promise.method(function (data) {
 
     throw new Error('Unknown exec type: ' + data.type);
 
-});
+};
 
-BrowserPuppet.prototype.execFunction = Promise.method(function (fn, args) {
-    return fn.apply(null, args);
-});
+BrowserPuppet.prototype.execFunction = async function (fn, args) {
+    return fn(...args);
+};
 
-BrowserPuppet.prototype.execCommand = Promise.method(function (command) {
-    this._log.trace('execCommand: ' + JSON.stringify(command));
+BrowserPuppet.prototype.execCommand = async function (command) {
+    // log.trace('execCommand: ' + JSON.stringify(command));
 
     switch (command.type) {
         case 'click':
@@ -553,25 +549,23 @@ BrowserPuppet.prototype.execCommand = Promise.method(function (command) {
         default:
             throw new Error('Unknown command type: ' + command.type);
     }
-});
+};
 
-BrowserPuppet.prototype.execCompositeCommand = Promise.method(function (commands) {
-    var self = this;
-
-    return Promise.each(commands, function (command) {
-        return self.execCommand(command);
-    });
-});
+BrowserPuppet.prototype.execCompositeCommand = async function (commands) {
+    for (const command of commands) {
+        await this.execCommand(command);
+    }
+};
 
 // TODO separate file
 // from https://stackoverflow.com/a/179514/4782902
 function deleteAllCookies() {
-    var cookies = document.cookie.split(';');
+    const cookies = document.cookie.split(';');
 
-    for (var i = 0; i < cookies.length; i++) {
-        var cookie = cookies[i];
-        var eqPos = cookie.indexOf('=');
-        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf('=');
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
         document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
     }
 }
@@ -582,7 +576,7 @@ BrowserPuppet.prototype.clearPersistentData = function () {
 };
 
 function getTargetNodeDTO(target) {
-    var dto = {
+    const dto = {
         className: target.className,
         id: target.id,
         innerText: target.innerText,
@@ -590,7 +584,7 @@ function getTargetNodeDTO(target) {
         type: target.type,
     };
 
-    var attributes = target.attributes;
+    const attributes = target.attributes;
 
     __each(target.attributes, function (attr) {
         if (attr.name.indexOf('data-') === 0) {
@@ -614,9 +608,9 @@ function assert(v, m) {
 }
 
 function __map(arrayLike, iteratee) {
-    var result = [];
+    const result = [];
 
-    for (var i = 0; i < arrayLike.length; i++) {
+    for (let i = 0; i < arrayLike.length; i++) {
         result.push(iteratee(arrayLike[i], i, arrayLike));
     }
 
@@ -624,7 +618,7 @@ function __map(arrayLike, iteratee) {
 }
 
 function __each(arrayLike, iteratee) {
-    for (var i = 0; i < arrayLike.length; i++) {
+    for (let i = 0; i < arrayLike.length; i++) {
         iteratee(arrayLike[i], i, arrayLike);
     }
 }

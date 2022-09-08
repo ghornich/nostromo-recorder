@@ -12720,6 +12720,7 @@ const MESSAGES = require('../../browser-puppeteer/src/messages');
 const EOL = '\n';
 const JSON_OUTPUT_FORMATTER_NAME = 'json (built-in)';
 const NOSTROMO_OUTPUT_FORMATTER_NAME = 'nostromo (built-in)';
+const PLAYWRIGHT_OUTPUT_FOMATTER_NAME = 'playwright (built-in)';
 const DEFAULT_OUTPUT_FILENAME = 'output';
 const MOCK_MESSAGE_INTERVAL = 500;
 window.RecorderApp = RecorderApp; // TODO browserPuppet port as config param
@@ -12756,11 +12757,15 @@ function RecorderApp(conf) {
     name: NOSTROMO_OUTPUT_FORMATTER_NAME,
     filename: 'recorder_output.js',
     fn: renderTestfile
+  }, {
+    name: PLAYWRIGHT_OUTPUT_FOMATTER_NAME,
+    filename: 'recorder_output_pw.js',
+    fn: renderTestFilePw
   });
 
   self._wsConn = null;
   self.commandList = new CommandList({
-    compositeEvents: self._conf.compositeEvents,
+    compositeEvents: self._conf.compositeEvents || [],
     compositeEventsThreshold: self._conf.compositeEventsThreshold,
     compositeEventsComparator: self._conf.compositeEventsComparator
   });
@@ -12821,11 +12826,12 @@ RecorderApp.prototype.start = function () {
   m.mount($('#mount')[0], MountComp);
 };
 
-RecorderApp.prototype._onWsMessage = function (event) {
+RecorderApp.prototype._onWsMessage = async function (event) {
+  console.log('event', event);
   let data = event.data;
 
   try {
-    data = JSONF.parse(data);
+    data = JSONF.parse(await data.text());
 
     switch (data.type) {
       case MESSAGES.UPSTREAM.SELECTOR_BECAME_VISIBLE:
@@ -13134,6 +13140,16 @@ function renderTestfile(cmds, rawIndent) {
   });
   res.push(indent + '});', '};', '');
   return res.join(EOL);
+}
+
+function renderTestFilePw(cmds, rawIndent) {
+  const indent = rawIndent || '    ';
+  const res = ['\'use strict\';', '', 'exports = module.exports = function (test) {', indent + 'test(\'\', async ({ page }) => {'];
+  cmds.forEach(function (cmd) {
+    res.push(indent + indent + 'await ' + renderCmdPw(cmd, indent) + ';');
+  });
+  res.push(indent + '});', '};', '');
+  return res.join(EOL);
 } // TODO move to own file
 // TODO use js formatter module
 
@@ -13172,6 +13188,55 @@ function renderCmd(cmd, indent) {
 
     case 'mouseover':
       return 't.mouseover(' + apos(cmd.selector) + ')';
+    // case '': return 't.()'
+
+    default:
+      console.error('unknown cmd type ', cmd.type, cmd);
+      return '<unknown: ' + JSON.stringify(cmd) + '>';
+  }
+}
+
+function renderCmdPw(cmd, indent) {
+  const selector = cmd.selector;
+
+  switch (cmd.type) {
+    case 'setValue':
+      return `page.locator(${apos(selector)}).fill(${apos(cmd.value)})`;
+
+    case 'pressKey':
+      return `page.locator(${apos(selector)}).press(${apos(cmd.keyCode)})`;
+
+    case 'scroll':
+      return `page.evaluate(function () {
+            const element = document.querySelector(${apos(selector)});
+            if (element) {
+                element.scrollTop = ${cmd.scrollTop};
+            }
+        })`;
+
+    case 'click':
+      return `page.locator(${apos(selector)}).click()`;
+
+    case 'waitForVisible':
+      return `page.waitForSelector(${apos(selector)}, { state: 'visible' })`;
+
+    case 'waitWhileVisible':
+      return `page.waitForSelector(${apos(selector)}, { state: 'hidden' })`;
+
+    case 'focus':
+      return `page.locator(${apos(cmd.selector)}).focus()`;
+    // TODO
+    // case 'assert': return 't.assert()';
+    // case 'comment': return 't.comment(' + apos(cmd.comment) + ')';
+
+    /* case 'uploadFileAndAssign': return 't.uploadFileAndAssign({' + EOL +
+        indent + indent + indent + 'selector: ' + apos(cmd.selector) + ',' + EOL +
+        indent + indent + indent + 'filePath: ' + apos(cmd.filePath) + ',' + EOL +
+        indent + indent + indent + 'destinationVariable: ' + apos(cmd.destinationVariable) + EOL +
+        indent + indent + '})'; */
+
+    case 'mouseover':
+      return `page.locator(${apos(selector)}).hover()`;
     // case '': return 't.()'
 
     default:
@@ -13392,7 +13457,7 @@ Ws4ever.prototype._onWsError = function (...args) {
 };
 
 Ws4ever.prototype._onWsMessage = function (...args) {
-    this.onmessage.apply(null, ...args);
+    this.onmessage(...args);
 };
 
 

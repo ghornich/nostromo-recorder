@@ -1,6 +1,6 @@
 (function () {
-    var BrowserPuppet = require('../src/puppet/browser-puppet.js');
-    var DOM_COMPLETE_STATE = 'complete';
+    const BrowserPuppet = require('../src/puppet/browser-puppet.js');
+    const DOM_COMPLETE_STATE = 'complete';
 
     window.browserPuppet = new BrowserPuppet();
 

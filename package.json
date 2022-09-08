@@ -7,7 +7,6 @@
   "scripts": {
     "start": "node src/cli.js",
     "build": "npm run build-ui && npm run build-get-unique-selector && npm run build-browser-puppeteer",
-
     "build-ui": "babel src/ui/app/recorder-app.jsx -o src/ui/app/babel-temp.js && browserify src/ui/app/babel-temp.js -o dist/recorder-app.dist.js && rimraf src/ui/app/babel-temp.js",
     "build-get-unique-selector": "browserify src/get-unique-selector/build/get-unique-selector.build.js -o src/get-unique-selector/dist/get-unique-selector.dist.js",
     "build-browser-puppeteer": "node src/browser-puppeteer/build/script/build.cjs",

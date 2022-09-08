@@ -12715,7 +12715,7 @@ const CommandList = require('../command-list');
 
 const COMMANDS = require('../../browser-puppeteer/src/commands');
 
-const MESSAGES = require('../../browser-puppeteer/src/messages');
+const MESSAGES = require('../../browser-puppeteer/src/messages.cjs');
 
 const EOL = '\n';
 const JSON_OUTPUT_FORMATTER_NAME = 'json (built-in)';
@@ -13251,7 +13251,7 @@ function apos(s) {
 
 function noop() {}
 
-},{"../../browser-puppeteer/src/commands":5,"../../browser-puppeteer/src/messages":6,"../../jsonf/jsonf.cjs":7,"../../ws4ever":10,"../command-list":9,"jquery":1,"mithril":2}],9:[function(require,module,exports){
+},{"../../browser-puppeteer/src/commands":5,"../../browser-puppeteer/src/messages.cjs":6,"../../jsonf/jsonf.cjs":7,"../../ws4ever":10,"../command-list":9,"jquery":1,"mithril":2}],9:[function(require,module,exports){
 'use strict';
 
 const COMMANDS = require('../browser-puppeteer/src/commands');

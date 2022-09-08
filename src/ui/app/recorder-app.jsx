@@ -5,7 +5,7 @@ const Ws4ever = require('../../ws4ever');
 
 const CommandList = require('../command-list');
 const COMMANDS = require('../../browser-puppeteer/src/commands');
-const MESSAGES = require('../../browser-puppeteer/src/messages');
+const MESSAGES = require('../../browser-puppeteer/src/messages.cjs');
 
 const EOL = '\n';
 

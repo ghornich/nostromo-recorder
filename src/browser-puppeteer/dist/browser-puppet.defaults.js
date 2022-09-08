@@ -13862,7 +13862,7 @@ BrowserPuppetCommands.prototype.scrollTo = function (cmd) {
  * @throws {Error}
  */
 BrowserPuppetCommands.prototype.mouseover = function (cmd) {
-    this._log.trace('BrowserPuppetCommands::mouseover: ' + JSON.stringify(cmd));
+    // this._log.trace('BrowserPuppetCommands::mouseover: ' + JSON.stringify(cmd));
 
     const $el = this.$(cmd.selector);
     this._assert$el($el, cmd);
@@ -14137,7 +14137,7 @@ function setNativeValue(element, value) {
 'use strict';
 
 const $ = require('jquery'); $.noConflict();
-const MESSAGES = require('../messages');
+const MESSAGES = require('../messages.cjs');
 const JSONF = require('../../../jsonf/jsonf.cjs');
 const UniqueSelector = require('../../../get-unique-selector');
 const debounce = require('lodash.debounce');
@@ -14663,7 +14663,7 @@ BrowserPuppet.prototype.execFunction = async function (fn, args) {
 };
 
 BrowserPuppet.prototype.execCommand = async function (command) {
-    log.trace('execCommand: ' + JSON.stringify(command));
+    // log.trace('execCommand: ' + JSON.stringify(command));
 
     switch (command.type) {
         case 'click':
@@ -14759,7 +14759,7 @@ function __each(arrayLike, iteratee) {
     }
 }
 
-},{"../../../get-unique-selector":17,"../../../jsonf/jsonf.cjs":20,"../../../selector-observer":21,"../../../ws4ever":22,"../messages":13,"./browser-puppet-commands.partial":14,"jquery":5,"lodash.debounce":6,"lodash.defaults":7,"loglevel":8}],16:[function(require,module,exports){
+},{"../../../get-unique-selector":17,"../../../jsonf/jsonf.cjs":20,"../../../selector-observer":21,"../../../ws4ever":22,"../messages.cjs":13,"./browser-puppet-commands.partial":14,"jquery":5,"lodash.debounce":6,"lodash.defaults":7,"loglevel":8}],16:[function(require,module,exports){
 'use strict';
 
 const DOMUtils = exports;

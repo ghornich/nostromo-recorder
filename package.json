@@ -9,7 +9,8 @@
     "src/cli.js",
     "src/recorder-server.js",
     "src/jsonf/*",
-    "src/browser-puppeteer/*"
+    "src/browser-puppeteer/*",
+    "src/ui/recorder-ui.html"
   ],
   "bin": "src/cli.js",
   "scripts": {

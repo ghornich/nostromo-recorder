@@ -4,6 +4,14 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "files": [
+    "dist/*",
+    "src/cli.js",
+    "src/recorder-server.js",
+    "src/jsonf/*",
+    "src/browser-puppeteer/*"
+  ],
+  "bin": "src/cli.js",
   "scripts": {
     "start": "node src/cli.js",
     "build": "npm run build-ui && npm run build-get-unique-selector && npm run build-browser-puppeteer",

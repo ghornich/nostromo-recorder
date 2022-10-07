@@ -3,7 +3,6 @@
   "version": "1.4.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
   "files": [
     "dist/*",
     "src/cli.js",
@@ -20,7 +19,8 @@
     "build-ui": "babel src/ui/app/recorder-app.jsx -o src/ui/app/babel-temp.js && browserify src/ui/app/babel-temp.js -o dist/recorder-app.dist.js && rimraf src/ui/app/babel-temp.js",
     "build-get-unique-selector": "browserify src/get-unique-selector/build/get-unique-selector.build.js -o src/get-unique-selector/dist/get-unique-selector.dist.js",
     "build-browser-puppeteer": "node src/browser-puppeteer/build/script/build.cjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "create-executable": "node ./create-executable.js"
   },
   "author": "ghornich",
   "license": "MIT",
@@ -45,7 +45,18 @@
     "browserify": "^17.0.0",
     "eslint": "^8.22.0",
     "eslint-plugin-jest": "^26.8.7",
+    "fs-extra": "^10.1.0",
     "jest": "^28.1.3",
+    "pkg": "^5.8.0",
     "rimraf": "^3.0.2"
+  },
+  "pkg": {
+    "assets": [
+      "./src/ui/*.html",
+      "./src/ui/app/*.css",
+      "./dist/*.*",
+      "./src/browser-puppeteer/dist/*.*"
+    ],
+    "outputPath": "release"
   }
 }

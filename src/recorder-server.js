@@ -1,16 +1,14 @@
-import { WebSocketServer } from 'ws';
-import http, { ServerResponse } from 'http';
-import fs from 'fs';
+const WebSocketServer = require('ws').WebSocketServer;
+const http = require('http');
+const ServerResponse = http.ServerResponse;
+const fs = require('fs');
 const fsp = fs.promises;
-import * as JSONF from './jsonf/jsonf.cjs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import puppeteer from 'puppeteer';
-import childProcess from 'child_process';
-import * as MESSAGES from './browser-puppeteer/src/messages.js';
-import BrowserPuppeteer from './browser-puppeteer/src/puppeteer/browser-puppeteer.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const JSONF = require('./jsonf/jsonf.cjs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+const childProcess = require('child_process');
+const MESSAGES = require('./browser-puppeteer/src/messages.js');
+const BrowserPuppeteer = require('./browser-puppeteer/src/puppeteer/browser-puppeteer.js');
 
 /** @typedef {Object} Command */
 /** @typedef {Object} RecorderApp */
@@ -21,7 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * @static
  * @constant
  */
-export const DEFAULT_RECORDER_APP_PORT = 7700;
+const DEFAULT_RECORDER_APP_PORT = 7700;
 
 /**
  * @callback FilterCallback
@@ -77,7 +75,7 @@ export const DEFAULT_RECORDER_APP_PORT = 7700;
  * @property {Boolean} [_preEnableRecording] - for testing only, do not use
  */
 
-export default class RecorderServer {
+exports.RecorderServer = class RecorderServer {
     /**
     * @param {RecorderOptions} conf
     */
@@ -108,7 +106,22 @@ export default class RecorderServer {
     async start() {
         this._wsServer.on('connection', () => console.log('recorder app connected'));
         this._recorderAppServer.listen(this._conf.recorderAppPort);
-        this._browser = await puppeteer.launch({ headless: false });
+        // darwin - MacOS
+        // win32 - Windows
+        // linux - Linux
+        let chromeExecutableName = '';
+        switch (process.platform) {
+            case 'darwin':
+                chromeExecutableName = 'Chromium.app';
+                break;
+            case 'linux':
+                chromeExecutableName = 'chrome';
+                break;
+            default:
+                chromeExecutableName = 'chrome.exe';
+                break;
+        }
+        this._browser = await puppeteer.launch({ headless: false, executablePath: `./chromium/${chromeExecutableName}` });
         this._puppeteer.start();
 
         this._browser.on('targetcreated', async (/** @type {import('puppeteer').Target} */ target) => {
@@ -223,4 +236,6 @@ export default class RecorderServer {
         const browserPuppeteer = await fsp.readFile(path.resolve(__dirname, './browser-puppeteer/dist/browser-puppet.defaults.js'), 'utf-8');
         await page.addScriptTag({ content: browserPuppeteer });
     }
-}
+};
+
+exports.DEFAULT_RECORDER_APP_PORT = DEFAULT_RECORDER_APP_PORT;

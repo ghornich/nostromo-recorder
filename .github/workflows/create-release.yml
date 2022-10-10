@@ -4,19 +4,14 @@ name: CI
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-    tags: ["*"]
-  pull_request:
-    branches: [ "main" ]
     tags: ["*"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
-      tags:
-        description: 'Release tags'
+      tag:
+        description: "Release tag"
         required: true
         type: string
 
@@ -46,6 +41,7 @@ jobs:
 
     - uses: ncipollo/release-action@v1
       with:
+        tag: ${{ inputs.tag || github.ref_name }}
         artifacts: "release/linux.zip,release/mac.zip,release/win32.zip"
         generateReleaseNotes: true
         token: ${{ secrets.ARTIFACT_TOKEN }}

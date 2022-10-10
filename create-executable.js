@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const fsp = fs.promises;
 const { exec } = require('child_process');
 const puppeteer = require('puppeteer');
+const archiver = require('archiver');
 
 const chromiumBuilds = ['mac', 'linux', 'win32'];
 const platformToChromium = {
@@ -61,6 +62,11 @@ const CHROMIUM_REVISION = 1022525;
                     }
                 }));
                 console.log('Copied chromium folders.');
+                console.log('Adding folders to archives.');
+                await Promise.all(chromiumBuilds.map(async platform => {
+                    const folderToZip = `./release/${platform}`;
+                    return zipDirectory(folderToZip, folderToZip + '.zip');
+                }));
                 console.log('Release built successfully!');
             });
         });
@@ -70,3 +76,25 @@ const CHROMIUM_REVISION = 1022525;
         console.log(error);
     }
 }());
+
+
+/**
+ * @param {String} sourceDir: /some/folder/to/compress
+ * @param {String} outPath: /path/to/created.zip
+ * @returns {Promise}
+ */
+ function zipDirectory(sourceDir, outPath) {
+    const archive = archiver('zip', { zlib: { level: 9 }});
+    const stream = fs.createWriteStream(outPath);
+  
+    return new Promise((resolve, reject) => {
+      archive
+        .directory(sourceDir, false)
+        .on('error', err => reject(err))
+        .pipe(stream)
+      ;
+  
+      stream.on('close', () => resolve());
+      archive.finalize();
+    });
+  }

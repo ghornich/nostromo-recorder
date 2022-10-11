@@ -72,13 +72,24 @@ jobs:
   release:
     needs: [build, check-tag]
     runs-on: ubuntu-latest
-    if: ${{needs.check-tag.outputs.tagexists}} == "false" || ${{needs.check-tag.outputs.tagexists}} == "true" && !inputs.tag
+    if: ${{needs.check-tag.outputs.tagexists}} == "false" || (${{needs.check-tag.outputs.tagexists}} == "true" && !inputs.tag)
     
     steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-win32
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-linux
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-mac
+    
     - uses: ncipollo/release-action@v1
       with:
         tag: ${{ inputs.tag || github.ref_name }}
-        artifacts: "release/linux.zip,release/mac.zip,release/win32.zip"
+        artifacts: "linux.zip,mac.zip,win32.zip"
         generateReleaseNotes: true
         token: ${{ secrets.ARTIFACT_TOKEN }}
     

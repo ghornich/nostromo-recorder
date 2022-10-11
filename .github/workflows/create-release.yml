@@ -1,13 +1,9 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Build-and-Release
 
-# Controls when the workflow will run
 on:
   push:
     tags: ["*"]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
       tag:
@@ -15,21 +11,15 @@ on:
         required: true
         type: string
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
     
     strategy:
       matrix:
         node-version: [16.x]
-      # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
@@ -75,7 +65,6 @@ jobs:
     if: needs.check-tag.outputs.tagexists == 'false' || (needs.check-tag.outputs.tagexists == 'true' && !inputs.tag)
     
     steps:
-    - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
       with:
         name: release-win32
@@ -89,7 +78,7 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         tag: ${{ inputs.tag || github.ref_name }}
-        commit: ${{ github.event.base_ref }}
+        commit: ${{ github.event.workflow_run.workflow_job.head_sha || github.event.base_ref }}
         artifacts: "linux.zip,mac.zip,win32.zip"
         generateReleaseNotes: true
         token: ${{ secrets.ARTIFACT_TOKEN }}

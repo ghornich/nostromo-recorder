@@ -72,7 +72,7 @@ jobs:
   release:
     needs: [build, check-tag]
     runs-on: ubuntu-latest
-    if: ${{ needs.check-tag.outputs.tagexists == "false" || (needs.check-tag.outputs.tagexists == "true" && !inputs.tag) }}
+    if: needs.check-tag.outputs.tagexists == 'false' || (needs.check-tag.outputs.tagexists == 'true' && !inputs.tag)
     
     steps:
     - uses: actions/checkout@v3

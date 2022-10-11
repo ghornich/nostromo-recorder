@@ -61,7 +61,9 @@ jobs:
     if: ${{ always() }}
     
     steps:
-    - run: echo ${{ needs.check-release-by-tag.outputs.id }}
+    - run: |
+          echo '::echo::on'
+          echo ${{ needs.check-release-by-tag.outputs.id }}
     - uses: actions/download-artifact@v3
       with:
         name: release-win32

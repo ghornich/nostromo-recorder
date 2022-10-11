@@ -38,10 +38,47 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run create-executable
-
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-win32
+        path: release/win32.zip
+        
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-linux
+        path: release/linux.zip
+        
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-mac
+        path: release/mac.zip
+        
+  check-tag:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      tagexists: ${{ steps.checkTag.outputs.exists }}
+    
+    steps:
+    - uses: mukunku/tag-exists-action@v1.0.0
+      id: checkTag
+      with: 
+        tag: ${{ inputs.tag || github.ref_name }}
+      env:
+       GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
+      
+        
+  release:
+    needs: [build, check-tag]
+    runs-on: ubuntu-latest
+    if: ${{needs.check-tag.outputs.tagexists}} == "false" || ${{needs.check-tag.outputs.tagexists}} == "true" && !inputs.tag
+    
+    steps:
     - uses: ncipollo/release-action@v1
       with:
         tag: ${{ inputs.tag || github.ref_name }}
         artifacts: "release/linux.zip,release/mac.zip,release/win32.zip"
         generateReleaseNotes: true
         token: ${{ secrets.ARTIFACT_TOKEN }}
+    

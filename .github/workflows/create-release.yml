@@ -44,27 +44,24 @@ jobs:
         name: release-mac
         path: release/mac.zip
         
-  check-tag:
+  check-release-by-tag:
     runs-on: ubuntu-latest
-    
-    outputs:
-      tagexists: ${{ steps.checkTag.outputs.exists }}
-    
     steps:
-    - uses: mukunku/tag-exists-action@v1.0.0
-      id: checkTag
-      with: 
-        tag: ${{ inputs.tag || github.ref_name }}
+    - uses: cardinalby/git-get-release-action@v1
       env:
-       GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
+      with:
+        tag: ${{ inputs.tag || github.ref_name }}
+        doNotFailIfNotFound: true
       
         
   release:
-    needs: [build, check-tag]
+    needs: [build, check-release-by-tag]
     runs-on: ubuntu-latest
-    if: needs.check-tag.outputs.tagexists == 'false' || (needs.check-tag.outputs.tagexists == 'true' && !inputs.tag)
+    if: ${{ always() }}
     
     steps:
+    - run: echo ${{ needs.check-release-by-tag.result }}
     - uses: actions/download-artifact@v3
       with:
         name: release-win32
@@ -78,7 +75,6 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         tag: ${{ inputs.tag || github.ref_name }}
-        commit: ${{ github.event.workflow_run.workflow_job.head_sha || github.event.base_ref }}
         artifacts: "linux.zip,mac.zip,win32.zip"
         generateReleaseNotes: true
         token: ${{ secrets.ARTIFACT_TOKEN }}

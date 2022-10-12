@@ -58,12 +58,9 @@ jobs:
   release:
     needs: [build, check-release-by-tag]
     runs-on: ubuntu-latest
-    if: ${{ always() }}
-    
+    if: !needs.check-release-by-tag.outputs.id
+
     steps:
-    - run: |
-          echo '::echo::on'
-          echo "${{ needs.check-release-by-tag.outputs.id }}"
     - uses: actions/download-artifact@v3
       with:
         name: release-win32

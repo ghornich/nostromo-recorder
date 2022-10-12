@@ -16,7 +16,7 @@ const CHROMIUM_REVISION = 1022525;
 
 (async function createExecutable() {
     try {
-        if (fs.existsSync('./release')) {
+        if (!await fsp.access('./release', fs.constants.F_OK)) {
             await fsp.rm('./release', { recursive: true });
         }
         await fsp.mkdir('./release/');
@@ -31,7 +31,7 @@ const CHROMIUM_REVISION = 1022525;
                     throw err;
                 }
                 console.log(out);
-                if (!fs.existsSync('./chromium')) {
+                if (await fsp.access('./chromium', fs.constants.F_OK)) {
                     await fsp.mkdir('./chromium/');
                     await Promise.all(chromiumBuilds.map(platform => fsp.mkdir(`./chromium/${platform}`)));
                     await Promise.all(chromiumBuilds.map(platform => {
@@ -47,7 +47,7 @@ const CHROMIUM_REVISION = 1022525;
                 await Promise.all(chromiumBuilds.map(async platform => {
                     const fileToMove = `./release/${PACKAGE_NAME}-${platformToChromium[platform]}${platform === 'win32' ? '.exe' : ''}`;
                     const fileDestination = `./release/${platform}/${PACKAGE_NAME}-${platform}${platform === 'win32' ? '.exe' : ''}`;
-                    if (fs.existsSync(fileToMove)) {
+                    if (!await fsp.access(fileToMove, fs.constants.R_OK)) {
                         return fsp.copyFile(fileToMove, fileDestination);
                     }
                 }));
@@ -56,7 +56,7 @@ const CHROMIUM_REVISION = 1022525;
                 await Promise.all(chromiumBuilds.map(async platform => {
                     const folderToMove = `./chromium/${platform}/${platform}-${CHROMIUM_REVISION}/chrome-${platform.replace(/[0-9]+/, '')}/`;
                     const folderDestination = `./release/${platform}/chromium/`;
-                    if (fs.existsSync(folderToMove)) {
+                    if (!await fsp.access(folderToMove, fs.constants.R_OK)) {
                         await fsp.mkdir(folderDestination);
                         return fs.copy(folderToMove, folderDestination);
                     }

@@ -17,6 +17,7 @@ const CHROMIUM_REVISION = 1022525;
 (async function createExecutable() {
     try {
         if (!await fsp.access('./release', fs.constants.F_OK)) {
+            console.log('Removing existing release directory.');
             await fsp.rm('./release', { recursive: true });
         }
         await fsp.mkdir('./release/');
@@ -47,19 +48,15 @@ const CHROMIUM_REVISION = 1022525;
                 await Promise.all(chromiumBuilds.map(async platform => {
                     const fileToMove = `./release/${PACKAGE_NAME}-${platformToChromium[platform]}${platform === 'win32' ? '.exe' : ''}`;
                     const fileDestination = `./release/${platform}/${PACKAGE_NAME}-${platform}${platform === 'win32' ? '.exe' : ''}`;
-                    if (!await fsp.access(fileToMove, fs.constants.R_OK)) {
-                        return fsp.copyFile(fileToMove, fileDestination);
-                    }
+                    return fsp.copyFile(fileToMove, fileDestination);
                 }));
                 console.log('Copied built executables.');
                 console.log('Copying chromium folders.');
                 await Promise.all(chromiumBuilds.map(async platform => {
                     const folderToMove = `./chromium/${platform}/${platform}-${CHROMIUM_REVISION}/chrome-${platform.replace(/[0-9]+/, '')}/`;
                     const folderDestination = `./release/${platform}/chromium/`;
-                    if (!await fsp.access(folderToMove, fs.constants.R_OK)) {
-                        await fsp.mkdir(folderDestination);
-                        return fs.copy(folderToMove, folderDestination);
-                    }
+                    await fsp.mkdir(folderDestination);
+                    return fs.copy(folderToMove, folderDestination);
                 }));
                 console.log('Copied chromium folders.');
                 console.log('Adding folders to archives.');

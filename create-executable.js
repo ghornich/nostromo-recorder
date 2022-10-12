@@ -35,7 +35,8 @@ const CHROMIUM_REVISION = 1022525;
                     throw err;
                 }
                 console.log(out);
-                if (await fsp.access('./chromium', fs.constants.F_OK)) {
+                console.log('Downloading chromium builds.');
+                try {
                     await fsp.mkdir('./chromium/');
                     await Promise.all(chromiumBuilds.map(platform => fsp.mkdir(`./chromium/${platform}`)));
                     await Promise.all(chromiumBuilds.map(platform => {
@@ -45,6 +46,13 @@ const CHROMIUM_REVISION = 1022525;
                             return browserFetcher.download(CHROMIUM_REVISION);
                         }
                     }));
+                } catch (error) {
+                    if (error.code === 'EEXIST') {
+                        console.log('Chromium folder already exists, skipping download');
+                    }
+                    else {
+                        throw error;
+                    }
                 }
                 console.log('Chromium builds downloaded.');
                 console.log('Copying built executables.');

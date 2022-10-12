@@ -16,9 +16,12 @@ const CHROMIUM_REVISION = 1022525;
 
 (async function createExecutable() {
     try {
-        if (!await fsp.access('./release', fs.constants.F_OK)) {
-            console.log('Removing existing release directory.');
+        try {
+            console.log('Removing existing release directory, if any.');
             await fsp.rm('./release', { recursive: true });
+        } 
+        catch {
+            console.log('Found no existing /release directory.');
         }
         await fsp.mkdir('./release/');
         await Promise.all(chromiumBuilds.map(platform => fsp.mkdir(`./release/${platform}`)));

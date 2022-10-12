@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import path from 'path';
-import minimist from 'minimist';
-import RecorderServer from './recorder-server.js';
+const path = require('path');
+const minimist = require('minimist');
+const RecorderServer = require('./recorder-server.js').RecorderServer;
 const args = minimist(process.argv.slice(2));
 
 async function run() {

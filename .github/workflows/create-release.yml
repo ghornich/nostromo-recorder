@@ -1,0 +1,83 @@
+name: Build-and-Release
+
+on:
+  push:
+    tags: ["*"]
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run create-executable
+    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-win32
+        path: release/win32.zip
+        
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-linux
+        path: release/linux.zip
+        
+    - uses: actions/upload-artifact@v3
+      with:
+        name: release-mac
+        path: release/mac.zip
+        
+  getByTag:
+    runs-on: ubuntu-latest
+    outputs:
+      tagId: ${{ steps.getTag.outputs.id }}
+    steps:
+    - uses: cardinalby/git-get-release-action@v1
+      id: getTag
+      env:
+        GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
+      with:
+        tag: ${{ inputs.tag || github.ref_name }}
+        doNotFailIfNotFound: true
+      
+        
+  release:
+    needs: [build, getByTag]
+    runs-on: ubuntu-latest
+    if: ${{ !needs.getByTag.outputs.tagId }}
+
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-win32
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-linux
+    - uses: actions/download-artifact@v3
+      with:
+        name: release-mac
+    
+    - uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ inputs.tag || github.ref_name }}
+        artifacts: "linux.zip,mac.zip,win32.zip"
+        generateReleaseNotes: true
+        token: ${{ secrets.ARTIFACT_TOKEN }}
+    

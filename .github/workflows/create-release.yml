@@ -44,10 +44,13 @@ jobs:
         name: release-mac
         path: release/mac.zip
         
-  check-release-by-tag:
+  getByTag:
     runs-on: ubuntu-latest
+    outputs:
+      tagId: ${{ steps.getTag.outputs.id }}
     steps:
     - uses: cardinalby/git-get-release-action@v1
+    - id: getTag
       env:
         GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
       with:
@@ -56,9 +59,9 @@ jobs:
       
         
   release:
-    needs: [build, check-release-by-tag]
+    needs: [build, getByTag]
     runs-on: ubuntu-latest
-    if: ${{ !needs.check-release-by-tag.outputs.id }}
+    if: ${{ !needs.getByTag.outputs.tagId }}
 
     steps:
     - uses: actions/download-artifact@v3

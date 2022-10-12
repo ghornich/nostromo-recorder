@@ -50,7 +50,7 @@ jobs:
       tagId: ${{ steps.getTag.outputs.id }}
     steps:
     - uses: cardinalby/git-get-release-action@v1
-    - id: getTag
+      id: getTag
       env:
         GITHUB_TOKEN: ${{ secrets.ARTIFACT_TOKEN }}
       with:
